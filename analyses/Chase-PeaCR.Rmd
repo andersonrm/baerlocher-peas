@@ -61,7 +61,12 @@ What is this analysis about?
 # Load Packages
 library(tidyverse) # Needed for data wrangling: dplyr, tidyr, ggplot2
 library(cowplot) # Needed for publication-quality ggplots
-
+library(emmeans) # Needed for estimated marginal means
+library(car) # Needed for extracting individual F stats from the MANOVA
+library(multcomp) # Needed for compact letter displays
+library(lme4)
+library(sjPlot)
+library(lmerTest)
 
 # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 # @@@@@ Data Preparation
@@ -70,21 +75,221 @@ library(cowplot) # Needed for publication-quality ggplots
 # Import datasets
 defense1 <- read.csv("data/defense.genes.csv")
 
-pemv.genes <- read.csv("data/pemv.genes.csv")
+pemv1 <- read.csv("data/pemv.genes.csv")
 
 ```
 
 
 ```{r Data_Wrangling, echo = F, comment = ""}
 
-# Put data wrangling code here
+defense1 <- defense1 %>% 
+  mutate(across(
+    c(Rhizo:TechRep),
+    as.factor))
+
+
+pemv1 <- pemv1 %>% 
+  mutate(across(
+    c(Rhizo:TechRep),
+    as.factor))
+
+#########################
+
+
+
 
 ```
 
 
-```{r Graph_name, echo = F}
+## Clark-Anderson $\2^{-\Delta \Delta Ct}$ method
 
-# Put each graph in a separate code block with a different name
+```{r clark_anderson_method, echo = F}
+
+# wrangling
+
+deltaCt <- defense1 %>% 
+  # pool the technical replicates:
+  group_by(Rhizo, Aphid, Cultivar, BioRep) %>% 
+  summarise(Btub = mean(Btub),
+            AO3 = mean(AO3),
+            LOX2 = mean(LOX2),
+            PR1 = mean(PR1)) %>% 
+  # find the differences between target and reference Ct values (i.e. normalize)
+  mutate(AO3Ct = AO3 - Btub,
+         LOX2Ct = LOX2 - Btub,
+         PR1Ct = PR1 - Btub)
+
+
+
+
+```
+
+
+
+```{r modeling, echo = F}
+
+############################
+# Clark-Anderson method
+
+
+# build mixed models with each normalized target as a response:
+ao3.mod <- lm(AO3Ct ~ Rhizo * Aphid * Cultivar,
+                data = deltaCt)
+summary(ao3.mod)
+
+emmeans(ao3.mod, 
+        ~ Rhizo * Aphid * Cultivar,
+                  adjust = "none", response = T)
+
+
+
+
+meanDeltaCt <- deltaCt %>% 
+  group_by(Rhizo, Aphid, Cultivar) %>% 
+  summarise(AO3CtMean = mean(AO3Ct),
+            LOX2CtMean = mean(LOX2Ct),
+            PR1CtMean = mean(PR1Ct))
+
+ggplot(meanDeltaCt, aes(x = Aphid, y = AO3CtMean,
+                        color = Rhizo, group = Rhizo)) +
+  geom_point() +
+  geom_line() +
+  facet_wrap(~Cultivar) +
+  theme_classic()
+
+ggplot(meanDeltaCt, aes(x = Rhizo, y = AO3CtMean,
+                        color = Aphid, group = Aphid)) +
+  geom_point() +
+  geom_line() +
+  facet_wrap(~Cultivar) +
+  theme_classic()
+
+ggplot(meanDeltaCt, aes(x = Aphid, y = AO3CtMean,
+                        color = Cultivar, group = Cultivar)) +
+  geom_point() +
+  geom_line() +
+  facet_wrap(~Rhizo) +
+  theme_classic()
+
+ggplot(meanDeltaCt, aes(x = Rhizo, y = AO3CtMean,
+                        color = Cultivar, group = Cultivar)) +
+  geom_point() +
+  geom_line() +
+  facet_wrap(~Aphid) +
+  theme_classic()
+
+
+
+
+meanDeltaCt %>%
+   tibble::rownames_to_column() %>%  
+   pivot_longer(-rowname,) %>% 
+   pivot_wider(names_from=rowname, values_from=value)
+
+
+
+
+###########
+
+lox2.mod <- lmer(LOX2Ct ~ Rhizo * Aphid + (1 | Cultivar),
+                 data = deltaCt)
+
+pr1.mod <- lmer(PR1Ct ~ Rhizo * Aphid + (1 | Cultivar),
+                data = deltaCt)
+
+# check for normality in residuals:
+
+def.long <- cbind(
+  data.frame(resid(ao3.mod)),
+  data.frame(resid(lox2.mod)),
+  data.frame(resid(pr1.mod)))
+
+colnames(def.long) <- c("AO3Ct", "LOX2Ct", "PR1Ct")
+
+def.long <- def.long %>% 
+  pivot_longer(AO3Ct : PR1Ct,
+               names_to = "genes",
+               values_to = "resids")
+
+def.long %>% 
+  ggplot(aes(x = resids)) +
+  geom_density() +
+  facet_wrap(~ genes) +
+  theme_classic()
+
+# Okay, residuals look pretty good.
+
+# Check the BLUPs:
+plot_model(ao3.mod,
+           type = "re")
+
+```
+
+
+```{r model_results, echo = F}
+
+def.table <- summary.aov(defense.genes)
+
+def.table
+
+```
+
+```{r model_EMMs, echo = F}
+
+# get EM means
+
+def.em <- emmeans(defense.genes,
+                  ~ Rhizo * Aphid * Cultivar | genes,
+                  mult.name = "genes",
+                  adjust = "none", response = T)
+
+# add CLDs (compact letter displays)
+
+def.cld <- cld(def.em,
+               sort = F, adjust = "none",
+               response = T, Letters = "abcdef")
+
+def.cld$.group <- gsub(" ", "", def.cld$.group)
+
+def.cld <- as_tibble(def.cld)
+
+############
+# 
+# test <- def.cld.wide %>% 
+#   mutate(treatment = case_when(
+#     Rhizo == "NoRhizobia" & Aphid == "Contol" ~
+#       norhizo_control,
+#     Rhizo == "NoRhizobia" & Aphid == "Sham" ~
+#       norhizo_sham,
+#     Rhizo == "NoRhizobia" & Aphid == "PEMV" ~
+#       norhizo_PEMV,
+#     Rhizo == "Rhizobia" & Aphid == "Control" ~
+#       rhizo_control,
+#     Rhizo == "Rhizobia" & Aphid == "Sham" ~
+#       rhizo_sham,
+#     Rhizo == "Rhizobia" & Aphid == "PEMV" ~
+#       rhizo_PEMV
+#   ))
+
+
+def.cld.wide <- def.cld %>% 
+  dplyr::select(Rhizo:SE) %>% 
+  pivot_wider(names_from = genes,
+              values_from = c(emmean, SE))
+
+def.cld.wide <- def.cld.wide %>% 
+  mutate(AO3Ct = 2^(-(emmean_AO3 - emmean_Btub)),
+         AO3CtSElower = 2^(-(emmean_AO3 - SE_AO3)),
+         AO3CtSEupper = 2^(-(emmean_AO3 + SE_AO3)),
+         LOX2Ct = 2^(-(emmean_LOX2 - emmean_Btub)),
+         LOX2CtSElower = 2^(-(emmean_LOX2 - SE_LOX2)),
+         LOX2CtSEupper = 2^(-(emmean_LOX2 + SE_LOX2)),
+         PR1Ct = 2^(-(emmean_PR1 - emmean_Btub)),
+         PR1CtSElower = 2^(-(emmean_PR1 - SE_AO3)),
+         PR1CtSEupper = 2^(-(emmean_PR1 = SE_AO3)))
+
+def.Ct <- def.cld.wide %>% 
+  dplyr::select(!emmean_Btub:treatment)
 
 ```
 
