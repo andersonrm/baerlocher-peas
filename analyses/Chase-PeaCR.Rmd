@@ -43,15 +43,6 @@ knitr::opts_chunk$set(warning = F, message = F, collapse = T, cache = T,
 
 ```
 
-
-
-## Overview
-
-What is this analysis about?
-
-### Summary of Results
-* 
-
 ```{r Main_Code, include = F, cache = F}
 
 # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -67,6 +58,7 @@ library(multcomp) # Needed for compact letter displays
 library(lme4)
 library(sjPlot)
 library(lmerTest)
+library(knitr)
 
 # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 # @@@@@ Data Preparation
@@ -80,9 +72,81 @@ pemv1 <- read.csv("data/pemv.genes.csv")
 ```
 
 
+## Overview
+
+This is an analysis of Chase's RT-qPCR data.
+Results are displayed as the fold change difference in gene expression between the *no rhizobia* (control) condition and the *rhizobia* (treatment) condition.
+
+* Fold changes > 1 represent upregulation in the *rhizobia* condition relative to *no rhizobia*
+
+* Fold changes < 1 represent downregulation in the *rhizobia* condition relative to *no rhizobia*
+
+
+## How the $\2^{-\Delta \Delta Ct}$ method works:
+
+Expression of the gene of interest is measured and calibrated to a reference gene.
+
+The $\Delta\Delta Ct$ is the normalized difference in gene expression between a gene of interest in control and treatment conditions:
+
+$$\Delta\Delta Ct = \Delta Ct_{reference.gene} - \Delta Ct_{target.gene}$$
+where,
+$$\Delta Ct_{reference.gene} = (Ct_{control} - Ct_{treatment})_{ref.gene}$$
+and
+$$\Delta Ct_{target.gene} = (Ct_{control} - Ct_{treatment})_{target.gene}$$
+Visually, this table represents the data needed:
+```{r table_demo, echo = F}
+Control <- c("A", "C")
+Treatment <- c("B", "D")
+demo <- data.frame(Control, Treatment)
+rownames(demo) <- c("Reference gene", "Target gene")
+
+kable(demo, format = 'markdown')
+
+```
+
+Where the above formula becomes:
+$$\Delta\Delta Ct = (D - B) - (C - A)$$
+Alternatively,
+$$\Delta\Delta Ct = (A - B) - (C - D)$$
+Or if you prefer no parentheses:
+$$\Delta\Delta Ct = A + D - B - C$$
+The above 3 equations are all equivalent.
+
+To understand the intuition behind this method we first need to understand what a Ct, or cycle threshold value actually is.
+
+![Yuan et al. 2006 Fig. 1](./Yuan2006_1.png)
+
+PCR has three phases, an exponential phase, a linear phase, and a plateau phase. PCR product will essentially double with each cycle in the *exponential* phase as reagents are not limited. As reagents become limiting, PCR product will be produced *linearly* with cycle number until some reagents are fully depleted, at which time the PCR product will no longer increase with cycle number, defining the *plateau* phase.
+
+Plotting the PCR product with $log_{2}$ transformation will yield a range where PCR product correlates with the original template amount. 
+
+![Yuan et al. 2006 Fig. 2](./Yuan2006_2.png)
+
+The peak of this range is the transition from the exponential phase to the linear phase which defines the cycle threshold number. 
+
+* Comparing two samples, a higher Ct value means lower expression since it took more PCR cycles to reach the same threshold value of PCR product.
+
+In order for relative quantification of gene expression to be valid, the chosen reference gene needs to have stable expression across treatment conditions. 
+
+That is $\Delta Ct_{reference.gene} \sim 0$ where the expression of the reference gene should only marginally fluctuate across samples and treatments.
+
+* If $\Delta Ct_{reference.gene} = 0$ then,
+
+* A positive $\Delta Ct_{target.gene}$ will result in upregulation:
+
+$$+\Delta Ct_{target} = -\Delta\Delta Ct = 2^{-(-\Delta\Delta Ct)} = FC>1$$
+
+alternatively, 
+* A negative $\Delta Ct_{target.gene}$ will result in downregulation:
+
+$$-\Delta Ct_{target} = +\Delta\Delta Ct = 2^{-(\Delta\Delta Ct)} = FC<1$$
+
+
+
 ```{r Data_Wrangling, echo = F, comment = ""}
 
 defense1 <- defense1 %>% 
+  #convert characters to factors
   mutate(across(
     c(Rhizo:TechRep),
     as.factor))
@@ -94,19 +158,7 @@ pemv1 <- pemv1 %>%
     as.factor))
 
 #########################
-
-
-
-
-```
-
-
-
-## Clark-Anderson $\2^{-\Delta \Delta Ct}$ method
-
-```{r clark_anderson_method, echo = F}
-
-# wrangling
+# defense genes
 
 deltaCt <- defense1 %>% 
   # pool the technical replicates:
@@ -120,13 +172,36 @@ deltaCt <- defense1 %>%
          LOX2Ct = LOX2 - Btub,
          PR1Ct = PR1 - Btub)
 
+# extract means for exploratory plots
+meanDeltaCt <- deltaCt %>% 
+  group_by(Rhizo, Aphid, Cultivar) %>% 
+  summarise(AO3CtMean = mean(AO3Ct),
+            LOX2CtMean = mean(LOX2Ct),
+            PR1CtMean = mean(PR1Ct))
 
+########################
+# cPEMV2 genes
+
+
+pemvDCT <- pemv1 %>% 
+  # pool the technical replicates:
+  group_by(Rhizo, Aphid, Cultivar, BioRep) %>% 
+  summarise(Btub = mean(Btub),
+            cPEMV2 = mean(cPEMV2)) %>% 
+  # find the differences between target and reference Ct values (i.e. normalize)
+  mutate(cPEMVCt = cPEMV2 - Btub)
+
+# extract means for exploratory plots
+meanPEMVCt <- pemvDCT %>% 
+  group_by(Rhizo, Aphid, Cultivar) %>% 
+  summarise(pemvCtMean = mean(cPEMVCt))
 
 
 ```
 
-# Did the reference rene perform well as a reference?
-```{r ref_gene_performance, echo = F}
+
+## Did the reference gene perform well as a reference for defense genes?
+```{r ref_gene_performance_defense, echo = F}
 
 deltaCt %>% 
   ggplot(aes(x = Btub, fill = Rhizo)) +
@@ -134,90 +209,30 @@ deltaCt %>%
   facet_wrap(~Cultivar) +
   theme_classic()
 
+```
+
+## Did the reference gene perform well as a reference for cPEMV2?
+```{r ref_gene_performance_cPEMV2, echo = F}
+
+pemvDCT %>% 
+  ggplot(aes(x = Btub, fill = Rhizo)) +
+  geom_density(alpha = 0.7) +
+  facet_wrap(~Cultivar) +
+  theme_classic()
 
 ```
 
-```{r modeling, echo = F}
-
-############################
-# Clark-Anderson method
+```{r defense_genes_models, echo = F}
 
 
-# build mixed models with each normalized target as a response:
+# build models with each normalized target gene as a response:
 ao3.mod <- lm(AO3Ct ~ Rhizo * Aphid * Cultivar,
                 data = deltaCt)
-summary(ao3.mod)
 
-mod.means <- emmeans(ao3.mod, 
-        ~ Rhizo * Aphid * Cultivar,
-                  adjust = "none", response = T)
-
-
-
-
-meanDeltaCt <- deltaCt %>% 
-  group_by(Rhizo, Aphid, Cultivar) %>% 
-  summarise(AO3CtMean = mean(AO3Ct),
-            LOX2CtMean = mean(LOX2Ct),
-            PR1CtMean = mean(PR1Ct))
-
-ggplot(meanDeltaCt, aes(x = Aphid, y = AO3CtMean,
-                        color = Rhizo, group = Rhizo)) +
-  geom_point() +
-  geom_line() +
-  facet_wrap(~Cultivar) +
-  theme_classic()
-
-ggplot(meanDeltaCt, aes(x = Rhizo, y = AO3CtMean,
-                        color = Aphid, group = Aphid)) +
-  geom_point() +
-  geom_line() +
-  facet_wrap(~Cultivar) +
-  theme_classic()
-
-ggplot(meanDeltaCt, aes(x = Aphid, y = AO3CtMean,
-                        color = Cultivar, group = Cultivar)) +
-  geom_point() +
-  geom_line() +
-  facet_wrap(~Rhizo) +
-  theme_classic()
-
-ggplot(meanDeltaCt, aes(x = Rhizo, y = AO3CtMean,
-                        color = Cultivar, group = Cultivar)) +
-  geom_point() +
-  geom_line() +
-  facet_wrap(~Aphid) +
-  theme_classic()
-
-
-
-mod.means <- as_tibble(mod.means)
-
-mod.means <- mod.means %>% 
-  pivot_wider(id_cols = c(Aphid, Cultivar),
-              names_from = Rhizo,
-              values_from = c(emmean, SE))
-
-
-ao3ddCT <- mod.means %>% 
-  mutate(ddCT = emmean_Rhizobia - emmean_NoRhizobia,
-         ddSE = (SE_Rhizobia + SE_NoRhizobia)/2,
-         ddLCL = ddCT - (1.96 * ddSE),
-         ddUCL = ddCT + (1.96 * ddSE),
-         FC = 2^-ddCT,
-         FClcl = 2^-(ddCT - ddLCL),
-         FCucl = 2^-(ddCT + ddUCL))
-
-
-
-
-
-###########
-
-lox2.mod <- lmer(LOX2Ct ~ Rhizo * Aphid + (1 | Cultivar),
+lox2.mod <- lm(LOX2Ct ~ Rhizo * Aphid * Cultivar,
                  data = deltaCt)
 
-pr1.mod <- lmer(PR1Ct ~ Rhizo * Aphid + (1 | Cultivar),
+pr1.mod <- lm(PR1Ct ~ Rhizo * Aphid * Cultivar,
                 data = deltaCt)
 
 # check for normality in residuals:
@@ -242,78 +257,248 @@ def.long %>%
 
 # Okay, residuals look pretty good.
 
+```
 
+```{r cPEMV2_model, echo = F}
+pemv.mod <- lm(cPEMVCt ~ Rhizo * Cultivar,
+               data = pemvDCT)
+
+# check diagnostics
+#plot_model(pemv.mod, type = "diag")
+
+# there is multicollinearity but everything else is fine
+```
+
+
+### Exploratory plots:
+
+#### AO3
+```{r AO3_test_plot, echo = F}
+
+ggplot(meanDeltaCt,
+       aes(x = Aphid, y = AO3CtMean,
+           color = Rhizo, group = Rhizo)) +
+  geom_point() +
+  geom_line() +
+  facet_wrap(~Cultivar) +
+  theme_classic()
+
+```
+
+#### LOX2
+```{r LOX2_test_plot, echo = F}
+
+ggplot(meanDeltaCt,
+       aes(x = Aphid, y = LOX2CtMean,
+           color = Rhizo, group = Rhizo)) +
+  geom_point() +
+  geom_line() +
+  facet_wrap(~Cultivar) +
+  theme_classic()
+
+```
+
+#### PR1
+```{r PR1_test_plot, echo = F}
+
+ggplot(meanDeltaCt,
+       aes(x = Aphid, y = PR1CtMean,
+           color = Rhizo, group = Rhizo)) +
+  geom_point() +
+  geom_line() +
+  facet_wrap(~Cultivar) +
+  theme_classic()
 
 ```
 
 
-```{r model_results, echo = F}
+#### cPEMV2
+```{r cPEMV2_test_plot, echo = F}
 
-# def.table <- summary.aov(defense.genes)
-# 
-# def.table
+ggplot(meanPEMVCt,
+       aes(x = Cultivar, y = pemvCtMean,
+           color = Rhizo, group = Cultivar)) +
+  geom_point(size = 2) +
+  geom_line(color = 'gray') +
+  theme_classic()
 
 ```
 
-```{r model_EMMs, echo = F}
+
+### $\2^{-\Delta \Delta Ct}$ calcs
+
+```{r AO3_calcs, echo = F}
 
 # get EM means
+ao3.means <- emmeans(ao3.mod, 
+        ~ Rhizo * Aphid * Cultivar,
+                  adjust = "none", response = T)
 
-# def.em <- emmeans(defense.genes,
-#                   ~ Rhizo * Aphid * Cultivar | genes,
-#                   mult.name = "genes",
-#                   adjust = "none", response = T)
+# convert to tibble
+ao3.means <- as_tibble(ao3.means)
 
-# add CLDs (compact letter displays)
+# spread the emmeans for calculations
+ao3.means <- ao3.means %>% 
+  pivot_wider(id_cols = c(Aphid, Cultivar),
+              names_from = Rhizo,
+              values_from = c(emmean, SE))
 
-# def.cld <- cld(def.em,
-#                sort = F, adjust = "none",
-#                response = T, Letters = "abcdef")
-# 
-# def.cld$.group <- gsub(" ", "", def.cld$.group)
-# 
-# def.cld <- as_tibble(def.cld)
-
-############
-# 
-# test <- def.cld.wide %>% 
-#   mutate(treatment = case_when(
-#     Rhizo == "NoRhizobia" & Aphid == "Contol" ~
-#       norhizo_control,
-#     Rhizo == "NoRhizobia" & Aphid == "Sham" ~
-#       norhizo_sham,
-#     Rhizo == "NoRhizobia" & Aphid == "PEMV" ~
-#       norhizo_PEMV,
-#     Rhizo == "Rhizobia" & Aphid == "Control" ~
-#       rhizo_control,
-#     Rhizo == "Rhizobia" & Aphid == "Sham" ~
-#       rhizo_sham,
-#     Rhizo == "Rhizobia" & Aphid == "PEMV" ~
-#       rhizo_PEMV
-#   ))
-
-
-# def.cld.wide <- def.cld %>% 
-#   dplyr::select(Rhizo:SE) %>% 
-#   pivot_wider(names_from = genes,
-#               values_from = c(emmean, SE))
-# 
-# def.cld.wide <- def.cld.wide %>% 
-#   mutate(AO3Ct = 2^(-(emmean_AO3 - emmean_Btub)),
-#          AO3CtSElower = 2^(-(emmean_AO3 - SE_AO3)),
-#          AO3CtSEupper = 2^(-(emmean_AO3 + SE_AO3)),
-#          LOX2Ct = 2^(-(emmean_LOX2 - emmean_Btub)),
-#          LOX2CtSElower = 2^(-(emmean_LOX2 - SE_LOX2)),
-#          LOX2CtSEupper = 2^(-(emmean_LOX2 + SE_LOX2)),
-#          PR1Ct = 2^(-(emmean_PR1 - emmean_Btub)),
-#          PR1CtSElower = 2^(-(emmean_PR1 - SE_AO3)),
-#          PR1CtSEupper = 2^(-(emmean_PR1 = SE_AO3)))
-# 
-# def.Ct <- def.cld.wide %>% 
-#   dplyr::select(!emmean_Btub:treatment)
+# calculate the metrics
+ao3ddCT <- ao3.means %>% 
+  mutate(ddCT = emmean_Rhizobia - emmean_NoRhizobia,
+         ddSE = (SE_Rhizobia + SE_NoRhizobia)/2,
+         ddLCL = ddCT - (1.96 * ddSE),
+         ddUCL = ddCT + (1.96 * ddSE),
+         FC = 2^-ddCT,
+         FClcl = 2^-(ddCT - ddLCL),
+         FCucl = 2^-(ddCT + ddUCL))
 
 ```
 
+```{r LOX2_calcs, echo = F}
+
+# get EM means
+lox2.means <- emmeans(lox2.mod, 
+        ~ Rhizo * Aphid * Cultivar,
+                  adjust = "none", response = T)
+
+# convert to tibble
+lox2.means <- as_tibble(lox2.means)
+
+# spread the emmeans for calculations
+lox2.means <- lox2.means %>% 
+  pivot_wider(id_cols = c(Aphid, Cultivar),
+              names_from = Rhizo,
+              values_from = c(emmean, SE))
+
+# calculate the metrics
+lox2ddCT <- lox2.means %>% 
+  mutate(ddCT = emmean_Rhizobia - emmean_NoRhizobia,
+         ddSE = (SE_Rhizobia + SE_NoRhizobia)/2,
+         ddLCL = ddCT - (1.96 * ddSE),
+         ddUCL = ddCT + (1.96 * ddSE),
+         FC = 2^-ddCT,
+         FClcl = 2^-(ddCT - ddLCL),
+         FCucl = 2^-(ddCT + ddUCL))
+
+```
+
+```{r PR1_calcs, echo = F}
+
+# get EM means
+pr1.means <- emmeans(pr1.mod, 
+        ~ Rhizo * Aphid * Cultivar,
+                  adjust = "none", response = T)
+
+# convert to tibble
+pr1.means <- as_tibble(pr1.means)
+
+# spread the emmeans for calculations
+pr1.means <- pr1.means %>% 
+  pivot_wider(id_cols = c(Aphid, Cultivar),
+              names_from = Rhizo,
+              values_from = c(emmean, SE))
+
+# calculate the metrics
+pr1ddCT <- pr1.means %>% 
+  mutate(ddCT = emmean_Rhizobia - emmean_NoRhizobia,
+         ddSE = (SE_Rhizobia + SE_NoRhizobia)/2,
+         ddLCL = ddCT - (1.96 * ddSE),
+         ddUCL = ddCT + (1.96 * ddSE),
+         FC = 2^-ddCT,
+         FClcl = 2^-(ddCT - ddLCL),
+         FCucl = 2^-(ddCT + ddUCL))
+
+```
+
+```{r cPEMV2_calcs, echo = F}
+
+# get EM means
+pemv.means <- emmeans(pemv.mod, 
+        ~ Rhizo * Cultivar,
+                  adjust = "none", response = T)
+
+# convert to tibble
+pemv.means <- as_tibble(pemv.means)
+
+# spread the emmeans for calculations
+pemv.means <- pemv.means %>% 
+  pivot_wider(id_cols = Cultivar,
+              names_from = Rhizo,
+              values_from = c(emmean, SE))
+
+# calculate the metrics
+pemvddCT <- pemv.means %>% 
+  mutate(ddCT = emmean_Rhizobia - emmean_NoRhizobia,
+         ddSE = (SE_Rhizobia + SE_NoRhizobia)/2,
+         ddLCL = ddCT - (1.96 * ddSE),
+         ddUCL = ddCT + (1.96 * ddSE),
+         FC = 2^-ddCT,
+         FClcl = 2^-(ddCT - ddLCL),
+         FCucl = 2^-(ddCT + ddUCL))
+
+```
+
+## Figures
+
+### AO3
+```{r ao3_fig, echo = F}
+
+ao3ddCT %>% 
+  ggplot(aes(x = Aphid, y = FC, group = Cultivar)) +
+  geom_point() +
+  geom_line() +
+  facet_wrap(~ Cultivar) +
+  theme_classic() +
+  labs(x = "Aphid treatment",
+       y = "Fold change in AO3 expression\nbetween rhizobia treatments") +
+  geom_hline(yintercept = 1, linetype = 'dashed')
+
+```
+
+### LOX2
+```{r lox2_fig, echo = F}
+
+lox2ddCT %>% 
+  ggplot(aes(x = Aphid, y = FC, group = Cultivar)) +
+  geom_point() +
+  geom_line() +
+  facet_wrap(~ Cultivar) +
+  theme_classic() +
+  labs(x = "Aphid treatment",
+       y = "Fold change in LOX2 expression\nbetween rhizobia treatments") +
+  geom_hline(yintercept = 1, linetype = 'dashed')
+
+```
+
+
+### PR1
+```{r pr1_fig, echo = F}
+
+pr1ddCT %>% 
+  ggplot(aes(x = Aphid, y = FC, group = Cultivar)) +
+  geom_point() +
+  geom_line() +
+  facet_wrap(~ Cultivar) +
+  theme_classic() +
+  labs(x = "Aphid treatment",
+       y = "Fold change in PR1 expression\nbetween rhizobia treatments") +
+  geom_hline(yintercept = 1, linetype = 'dashed')
+
+```
+
+### cPEMV2
+```{r cpemv2_fig, echo = F}
+
+pemvddCT %>% 
+  ggplot(aes(x = Cultivar, y = FC, group = )) +
+  geom_point() +
+  theme_classic() +
+  labs(x = "Cultivar",
+       y = "Fold change in cPEMV2 expression\nbetween rhizobia treatments") +
+  geom_hline(yintercept = 1, linetype = 'dashed')
+
+```
 
 ## Session Information
 

@@ -1,124 +1,189 @@
 Winter Pea qRT-PCR
 ================
 Riley M. Anderson & Chase Baerlocher
-February 05, 2024
+February 06, 2024
 
   
 
 - [Overview](#overview)
-  - [Summary of Results](#summary-of-results)
-- [Clark-Anderson
+- [How the
   ![\2^{-\Delta \Delta Ct}](https://latex.codecogs.com/png.latex?%5C2%5E%7B-%5CDelta%20%5CDelta%20Ct%7D "\2^{-\Delta \Delta Ct}")
-  method](#clark-anderson-2-delta-delta-ct-method)
-- [Did the reference rene perform well as a
-  reference?](#did-the-reference-rene-perform-well-as-a-reference)
-  - [Session Information](#session-information)
+  method works:](#how-the-2-delta-delta-ct-method-works)
+- [Did the reference gene perform well as a reference for defense
+  genes?](#did-the-reference-gene-perform-well-as-a-reference-for-defense-genes)
+- [Did the reference gene perform well as a reference for
+  cPEMV2?](#did-the-reference-gene-perform-well-as-a-reference-for-cpemv2)
+  - [Exploratory plots:](#exploratory-plots)
+    - [AO3](#ao3)
+    - [LOX2](#lox2)
+    - [PR1](#pr1)
+    - [cPEMV2](#cpemv2)
+  - [![\2^{-\Delta \Delta Ct}](https://latex.codecogs.com/png.latex?%5C2%5E%7B-%5CDelta%20%5CDelta%20Ct%7D "\2^{-\Delta \Delta Ct}")
+    calcs](#2-delta-delta-ct-calcs)
+- [Figures](#figures)
+  - [AO3](#ao3-1)
+  - [LOX2](#lox2-1)
+  - [PR1](#pr1-1)
+  - [cPEMV2](#cpemv2-1)
+- [Session Information](#session-information)
 
 ## Overview
 
-What is this analysis about?
+This is an analysis of Chase’s RT-qPCR data. Results are displayed as
+the fold change difference in gene expression between the *no rhizobia*
+(control) condition and the *rhizobia* (treatment) condition.
 
-### Summary of Results
+- Fold changes \> 1 represent upregulation in the *rhizobia* condition
+  relative to *no rhizobia*
 
-- 
+- Fold changes \< 1 represent downregulation in the *rhizobia* condition
+  relative to *no rhizobia*
 
-## Clark-Anderson ![\2^{-\Delta \Delta Ct}](https://latex.codecogs.com/png.latex?%5C2%5E%7B-%5CDelta%20%5CDelta%20Ct%7D "\2^{-\Delta \Delta Ct}") method
+## How the ![\2^{-\Delta \Delta Ct}](https://latex.codecogs.com/png.latex?%5C2%5E%7B-%5CDelta%20%5CDelta%20Ct%7D "\2^{-\Delta \Delta Ct}") method works:
 
-# Did the reference rene perform well as a reference?
+Expression of the gene of interest is measured and calibrated to a
+reference gene.
 
-![](Chase-PeaCR_files/figure-gfm/ref_gene_performance-1.png)<!-- -->
+The
+![\Delta\Delta Ct](https://latex.codecogs.com/png.latex?%5CDelta%5CDelta%20Ct "\Delta\Delta Ct")
+is the normalized difference in gene expression between a gene of
+interest in control and treatment conditions:
 
-    ## 
-    ## Call:
-    ## lm(formula = AO3Ct ~ Rhizo * Aphid * Cultivar, data = deltaCt)
-    ## 
-    ## Residuals:
-    ##     Min      1Q  Median      3Q     Max 
-    ## -4.9833 -0.5561  0.0961  0.6745  3.0750 
-    ## 
-    ## Coefficients:
-    ##                                          Estimate Std. Error t value Pr(>|t|)
-    ## (Intercept)                               2.21167    0.51807   4.269 3.21e-05
-    ## RhizoRhizobia                            -1.99900    0.76843  -2.601 0.010079
-    ## AphidPEMV                                -0.74611    0.73267  -1.018 0.309918
-    ## AphidSham                                 1.76667    0.73267   2.411 0.016931
-    ## CultivarKlondike                         -0.65722    0.73267  -0.897 0.370937
-    ## CultivarLynx                             -2.88722    0.73267  -3.941 0.000117
-    ## CultivarMelrose                          -2.96278    0.73267  -4.044 7.87e-05
-    ## CultivarMiCa                             -3.47333    0.73267  -4.741 4.40e-06
-    ## CultivarWindham                          -4.20667    0.73267  -5.742 4.07e-08
-    ## RhizoRhizobia:AphidPEMV                   1.92567    1.06174   1.814 0.071437
-    ## RhizoRhizobia:AphidSham                  -0.53767    1.06174  -0.506 0.613211
-    ## RhizoRhizobia:CultivarKlondike            4.50122    1.12316   4.008 9.06e-05
-    ## RhizoRhizobia:CultivarLynx                2.80678    1.06174   2.644 0.008949
-    ## RhizoRhizobia:CultivarMelrose             7.05400    1.06174   6.644 3.72e-10
-    ## RhizoRhizobia:CultivarMiCa                3.51511    1.06174   3.311 0.001130
-    ## RhizoRhizobia:CultivarWindham             7.20456    1.06174   6.786 1.72e-10
-    ## AphidPEMV:CultivarKlondike                2.41167    1.03615   2.328 0.021081
-    ## AphidSham:CultivarKlondike                1.14889    1.03615   1.109 0.269035
-    ## AphidPEMV:CultivarLynx                    1.88111    1.03615   1.815 0.071161
-    ## AphidSham:CultivarLynx                    0.77278    1.03615   0.746 0.456778
-    ## AphidPEMV:CultivarMelrose                 1.91667    1.03615   1.850 0.066029
-    ## AphidSham:CultivarMelrose                 0.62000    1.03615   0.598 0.550367
-    ## AphidPEMV:CultivarMiCa                    2.39000    1.03615   2.307 0.022248
-    ## AphidSham:CultivarMiCa                   -0.02222    1.03615  -0.021 0.982914
-    ## AphidPEMV:CultivarWindham                 4.30444    1.03615   4.154 5.09e-05
-    ## AphidSham:CultivarWindham                 4.24556    1.03615   4.097 6.38e-05
-    ## RhizoRhizobia:AphidPEMV:CultivarKlondike -5.06189    1.54556  -3.275 0.001273
-    ## RhizoRhizobia:AphidSham:CultivarKlondike -5.74122    1.54556  -3.715 0.000273
-    ## RhizoRhizobia:AphidPEMV:CultivarLynx     -2.78956    1.48354  -1.880 0.061723
-    ## RhizoRhizobia:AphidSham:CultivarLynx     -0.25289    1.48354  -0.170 0.864843
-    ## RhizoRhizobia:AphidPEMV:CultivarMelrose  -5.27733    1.48354  -3.557 0.000482
-    ## RhizoRhizobia:AphidSham:CultivarMelrose  -3.98678    1.48354  -2.687 0.007897
-    ## RhizoRhizobia:AphidPEMV:CultivarMiCa     -2.81289    1.48354  -1.896 0.059599
-    ## RhizoRhizobia:AphidSham:CultivarMiCa      0.87767    1.48354   0.592 0.554879
-    ## RhizoRhizobia:AphidPEMV:CultivarWindham  -8.16011    1.48354  -5.500 1.33e-07
-    ## RhizoRhizobia:AphidSham:CultivarWindham  -8.66844    1.48354  -5.843 2.45e-08
-    ##                                             
-    ## (Intercept)                              ***
-    ## RhizoRhizobia                            *  
-    ## AphidPEMV                                   
-    ## AphidSham                                *  
-    ## CultivarKlondike                            
-    ## CultivarLynx                             ***
-    ## CultivarMelrose                          ***
-    ## CultivarMiCa                             ***
-    ## CultivarWindham                          ***
-    ## RhizoRhizobia:AphidPEMV                  .  
-    ## RhizoRhizobia:AphidSham                     
-    ## RhizoRhizobia:CultivarKlondike           ***
-    ## RhizoRhizobia:CultivarLynx               ** 
-    ## RhizoRhizobia:CultivarMelrose            ***
-    ## RhizoRhizobia:CultivarMiCa               ** 
-    ## RhizoRhizobia:CultivarWindham            ***
-    ## AphidPEMV:CultivarKlondike               *  
-    ## AphidSham:CultivarKlondike                  
-    ## AphidPEMV:CultivarLynx                   .  
-    ## AphidSham:CultivarLynx                      
-    ## AphidPEMV:CultivarMelrose                .  
-    ## AphidSham:CultivarMelrose                   
-    ## AphidPEMV:CultivarMiCa                   *  
-    ## AphidSham:CultivarMiCa                      
-    ## AphidPEMV:CultivarWindham                ***
-    ## AphidSham:CultivarWindham                ***
-    ## RhizoRhizobia:AphidPEMV:CultivarKlondike ** 
-    ## RhizoRhizobia:AphidSham:CultivarKlondike ***
-    ## RhizoRhizobia:AphidPEMV:CultivarLynx     .  
-    ## RhizoRhizobia:AphidSham:CultivarLynx        
-    ## RhizoRhizobia:AphidPEMV:CultivarMelrose  ***
-    ## RhizoRhizobia:AphidSham:CultivarMelrose  ** 
-    ## RhizoRhizobia:AphidPEMV:CultivarMiCa     .  
-    ## RhizoRhizobia:AphidSham:CultivarMiCa        
-    ## RhizoRhizobia:AphidPEMV:CultivarWindham  ***
-    ## RhizoRhizobia:AphidSham:CultivarWindham  ***
-    ## ---
-    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
-    ## 
-    ## Residual standard error: 1.269 on 175 degrees of freedom
-    ## Multiple R-squared:  0.6484, Adjusted R-squared:  0.578 
-    ## F-statistic: 9.219 on 35 and 175 DF,  p-value: < 2.2e-16
+![\Delta\Delta Ct = \Delta Ct\_{reference.gene} - \Delta Ct\_{target.gene}](https://latex.codecogs.com/png.latex?%5CDelta%5CDelta%20Ct%20%3D%20%5CDelta%20Ct_%7Breference.gene%7D%20-%20%5CDelta%20Ct_%7Btarget.gene%7D "\Delta\Delta Ct = \Delta Ct_{reference.gene} - \Delta Ct_{target.gene}")
 
-![](Chase-PeaCR_files/figure-gfm/modeling-1.png)<!-- -->![](Chase-PeaCR_files/figure-gfm/modeling-2.png)<!-- -->![](Chase-PeaCR_files/figure-gfm/modeling-3.png)<!-- -->![](Chase-PeaCR_files/figure-gfm/modeling-4.png)<!-- -->![](Chase-PeaCR_files/figure-gfm/modeling-5.png)<!-- -->
+where,
+
+![\Delta Ct\_{reference.gene} = (Ct\_{control} - Ct\_{treatment})\_{ref.gene}](https://latex.codecogs.com/png.latex?%5CDelta%20Ct_%7Breference.gene%7D%20%3D%20%28Ct_%7Bcontrol%7D%20-%20Ct_%7Btreatment%7D%29_%7Bref.gene%7D "\Delta Ct_{reference.gene} = (Ct_{control} - Ct_{treatment})_{ref.gene}")
+
+and
+
+![\Delta Ct\_{target.gene} = (Ct\_{control} - Ct\_{treatment})\_{target.gene}](https://latex.codecogs.com/png.latex?%5CDelta%20Ct_%7Btarget.gene%7D%20%3D%20%28Ct_%7Bcontrol%7D%20-%20Ct_%7Btreatment%7D%29_%7Btarget.gene%7D "\Delta Ct_{target.gene} = (Ct_{control} - Ct_{treatment})_{target.gene}")
+
+Visually, this table represents the data needed:
+
+|                | Control | Treatment |
+|:---------------|:--------|:----------|
+| Reference gene | A       | B         |
+| Target gene    | C       | D         |
+
+Where the above formula becomes:
+
+![\Delta\Delta Ct = (D - B) - (C - A)](https://latex.codecogs.com/png.latex?%5CDelta%5CDelta%20Ct%20%3D%20%28D%20-%20B%29%20-%20%28C%20-%20A%29 "\Delta\Delta Ct = (D - B) - (C - A)")
+
+Alternatively,
+
+![\Delta\Delta Ct = (A - B) - (C - D)](https://latex.codecogs.com/png.latex?%5CDelta%5CDelta%20Ct%20%3D%20%28A%20-%20B%29%20-%20%28C%20-%20D%29 "\Delta\Delta Ct = (A - B) - (C - D)")
+
+Or if you prefer no parentheses:
+
+![\Delta\Delta Ct = A + D - B - C](https://latex.codecogs.com/png.latex?%5CDelta%5CDelta%20Ct%20%3D%20A%20%2B%20D%20-%20B%20-%20C "\Delta\Delta Ct = A + D - B - C")
+
+The above 3 equations are all equivalent.
+
+To understand the intuition behind this method we first need to
+understand what a Ct, or cycle threshold value actually is.
+
+<figure>
+<img src="./Yuan2006_1.png" alt="Yuan et al. 2006 Fig. 1" />
+<figcaption aria-hidden="true">Yuan et al. 2006 Fig. 1</figcaption>
+</figure>
+
+PCR has three phases, an exponential phase, a linear phase, and a
+plateau phase. PCR product will essentially double with each cycle in
+the *exponential* phase as reagents are not limited. As reagents become
+limiting, PCR product will be produced *linearly* with cycle number
+until some reagents are fully depleted, at which time the PCR product
+will no longer increase with cycle number, defining the *plateau* phase.
+
+Plotting the PCR product with
+![log\_{2}](https://latex.codecogs.com/png.latex?log_%7B2%7D "log_{2}")
+transformation will yield a range where PCR product correlates with the
+original template amount.
+
+<figure>
+<img src="./Yuan2006_2.png" alt="Yuan et al. 2006 Fig. 2" />
+<figcaption aria-hidden="true">Yuan et al. 2006 Fig. 2</figcaption>
+</figure>
+
+The peak of this range is the transition from the exponential phase to
+the linear phase which defines the cycle threshold number.
+
+- Comparing two samples, a higher Ct value means lower expression since
+  it took more PCR cycles to reach the same threshold value of PCR
+  product.
+
+In order for relative quantification of gene expression to be valid, the
+chosen reference gene needs to have stable expression across treatment
+conditions.
+
+That is
+![\Delta Ct\_{reference.gene} \sim 0](https://latex.codecogs.com/png.latex?%5CDelta%20Ct_%7Breference.gene%7D%20%5Csim%200 "\Delta Ct_{reference.gene} \sim 0")
+where the expression of the reference gene should only marginally
+fluctuate across samples and treatments.
+
+- If
+  ![\Delta Ct\_{reference.gene} = 0](https://latex.codecogs.com/png.latex?%5CDelta%20Ct_%7Breference.gene%7D%20%3D%200 "\Delta Ct_{reference.gene} = 0")
+  then,
+
+- A positive
+  ![\Delta Ct\_{target.gene}](https://latex.codecogs.com/png.latex?%5CDelta%20Ct_%7Btarget.gene%7D "\Delta Ct_{target.gene}")
+  will result in upregulation:
+
+![+\Delta Ct\_{target} = -\Delta\Delta Ct = 2^{-(-\Delta\Delta Ct)} = FC\>1](https://latex.codecogs.com/png.latex?%2B%5CDelta%20Ct_%7Btarget%7D%20%3D%20-%5CDelta%5CDelta%20Ct%20%3D%202%5E%7B-%28-%5CDelta%5CDelta%20Ct%29%7D%20%3D%20FC%3E1 "+\Delta Ct_{target} = -\Delta\Delta Ct = 2^{-(-\Delta\Delta Ct)} = FC>1")
+
+alternatively, \* A negative
+![\Delta Ct\_{target.gene}](https://latex.codecogs.com/png.latex?%5CDelta%20Ct_%7Btarget.gene%7D "\Delta Ct_{target.gene}")
+will result in downregulation:
+
+![-\Delta Ct\_{target} = +\Delta\Delta Ct = 2^{-(\Delta\Delta Ct)} = FC\<1](https://latex.codecogs.com/png.latex?-%5CDelta%20Ct_%7Btarget%7D%20%3D%20%2B%5CDelta%5CDelta%20Ct%20%3D%202%5E%7B-%28%5CDelta%5CDelta%20Ct%29%7D%20%3D%20FC%3C1 "-\Delta Ct_{target} = +\Delta\Delta Ct = 2^{-(\Delta\Delta Ct)} = FC<1")
+
+## Did the reference gene perform well as a reference for defense genes?
+
+![](Chase-PeaCR_files/figure-gfm/ref_gene_performance_defense-1.png)<!-- -->
+
+## Did the reference gene perform well as a reference for cPEMV2?
+
+![](Chase-PeaCR_files/figure-gfm/ref_gene_performance_cPEMV2-1.png)<!-- -->
+
+![](Chase-PeaCR_files/figure-gfm/defense_genes_models-1.png)<!-- -->
+
+### Exploratory plots:
+
+#### AO3
+
+![](Chase-PeaCR_files/figure-gfm/AO3_test_plot-1.png)<!-- -->
+
+#### LOX2
+
+![](Chase-PeaCR_files/figure-gfm/LOX2_test_plot-1.png)<!-- -->
+
+#### PR1
+
+![](Chase-PeaCR_files/figure-gfm/PR1_test_plot-1.png)<!-- -->
+
+#### cPEMV2
+
+![](Chase-PeaCR_files/figure-gfm/cPEMV2_test_plot-1.png)<!-- -->
+
+### ![\2^{-\Delta \Delta Ct}](https://latex.codecogs.com/png.latex?%5C2%5E%7B-%5CDelta%20%5CDelta%20Ct%7D "\2^{-\Delta \Delta Ct}") calcs
+
+## Figures
+
+### AO3
+
+![](Chase-PeaCR_files/figure-gfm/ao3_fig-1.png)<!-- -->
+
+### LOX2
+
+![](Chase-PeaCR_files/figure-gfm/lox2_fig-1.png)<!-- -->
+
+### PR1
+
+![](Chase-PeaCR_files/figure-gfm/pr1_fig-1.png)<!-- -->
+
+### cPEMV2
+
+![](Chase-PeaCR_files/figure-gfm/cpemv2_fig-1.png)<!-- -->
 
 ## Session Information
 
