@@ -74,7 +74,7 @@ pemv1 <- read.csv("data/pemv.genes.csv")
 
 ## Overview
 
-This is an analysis of Chase's RT-qPCR data.
+This is an analysis of Chase's qRT-PCR data.
 Results are displayed as the fold change difference in gene expression between the *no rhizobia* (control) condition and the *rhizobia* (treatment) condition.
 
 * Fold changes > 1 represent upregulation in the *rhizobia* condition relative to *no rhizobia*
@@ -105,12 +105,13 @@ kable(demo, format = 'markdown')
 ```
 
 Where the above formula becomes:
-$$\Delta\Delta Ct = (D - B) - (C - A)$$
-Alternatively,
 $$\Delta\Delta Ct = (A - B) - (C - D)$$
+
+Alternatively,
+$$\Delta\Delta Ct = (D - B) - (C - A)$$
 Or if you prefer no parentheses:
 $$\Delta\Delta Ct = A + D - B - C$$
-The above 3 equations are all equivalent.
+The above 3 equations are equivalent (this can be useful if your data are organized in different ways).
 
 To understand the intuition behind this method we first need to understand what a Ct, or cycle threshold value actually is.
 
@@ -134,13 +135,120 @@ That is $\Delta Ct_{reference.gene} \sim 0$ where the expression of the referenc
 
 * A positive $\Delta Ct_{target.gene}$ will result in upregulation:
 
-$$+\Delta Ct_{target} = -\Delta\Delta Ct = 2^{-(-\Delta\Delta Ct)} = FC>1$$
-
+$$+\Delta Ct_{target} \to -\Delta\Delta Ct \to 2^{-(-\Delta\Delta Ct)} \to FC>1$$
 alternatively, 
+
+
 * A negative $\Delta Ct_{target.gene}$ will result in downregulation:
 
-$$-\Delta Ct_{target} = +\Delta\Delta Ct = 2^{-(\Delta\Delta Ct)} = FC<1$$
+$$-\Delta Ct_{target} \to +\Delta\Delta Ct \to 2^{-(\Delta\Delta Ct)} \to FC<1$$
 
+## A working example
+
+**Downregulation** is defined by a **higher** Ct value in the treatment condition compared to the control condition. Let's try the calculations with ideal data and with data that have a poor reference gene.
+
+### Proper reference gene:
+
+```{r good_example_table, echo = F}
+
+Control <- c(26.012, 24.149)
+Treatment <- c(26.475, 26.688)
+ex.tab2 <- data.frame(Control, Treatment)
+rownames(ex.tab2) <- c("Reference gene", "Target gene")
+
+A <- 26.012
+B <- 26.475
+C <- 24.149
+D <- 26.688
+
+kable(ex.tab2, format = 'markdown')
+
+```
+
+Our $\Delta Ct_{ref}$ = A - B
+```{r example_good_ref1, echo = F}
+dCt.ref <- A-B
+dCt.ref
+```
+Not bad, pretty close to 0
+
+
+Our $\Delta Ct_{target}$ = C - D
+```{r example_good_ref2, echo = F}
+dCt.target <- C-D
+dCt.target
+```
+Ok, this indicates that our target gene is **downregulated** in the treatment condition.
+
+
+$\Delta\Delta Ct$ <- (A - B) - (C - D)
+
+```{r example_good_ref3, echo = F}
+ddCt <- (A - B) - (C - D)
+ddCt
+```
+Notice that the $\Delta\Delta Ct$ value is **positive**.
+
+Now for the fold change transformation:
+$2^{-(\Delta\Delta Ct)}$ or $2^{-(2.076)}$
+
+```{r example_good_ref4, echo = F}
+2^-ddCt
+```
+Our answer falls between 0 and 1 indicating that the target gene is **downregulated**. This result makes sense given the negative $\Delta Ct_{target}$ value.
+
+
+
+
+### Now, a bad reference gene:
+This example will use the same values as above for the target gene. Only the reference gene has changed.
+
+```{r bad_example_table, echo = F}
+
+Control <- c(21.903, 24.149)
+Treatment <- c(26.475, 26.688)
+ex.tab2 <- data.frame(Control, Treatment)
+rownames(ex.tab2) <- c("Reference gene", "Target gene")
+a <- 21.903
+b <- 26.475
+c <- 24.149
+d <- 26.688
+
+kable(ex.tab2, format = 'markdown')
+
+```
+
+Our $\Delta Ct_{ref}$ = a - b
+```{r example_bad_ref1, echo = F}
+dCt.ref <- a-b
+dCt.ref
+```
+Terrible, our reference gene is not stable.
+
+
+Our $\Delta Ct_{target}$ = c - d
+```{r example_bad_ref2, echo = F}
+dCt.target <- c-d
+dCt.target
+```
+Again, this would indicate that our target gene is **downregulated** in the treatment condition. 
+
+
+$\Delta\Delta Ct$ <- (a - b) - (c - d)
+
+```{r example_bad_ref3, echo = F}
+ddCt <- (a - b) - (c - d)
+ddCt
+```
+Notice that our $\Delta\Delta Ct$ value is now **negative**!
+
+
+Now for the fold change transformation:
+$2^{-(\Delta\Delta Ct)}$ or $2^{-(-2.033)}$
+```{r example_bad_ref4, echo = F}
+2^-ddCt
+```
+Now our answer is much greater than 1 indicating that the target gene is highly **upregulated**! Even slight differences in expression of the reference gene can generate spurious results! Here the direction of the effect is completely reversed and our interpretation of the result would be meaningless. 
 
 
 ```{r Data_Wrangling, echo = F, comment = ""}
@@ -200,7 +308,7 @@ meanPEMVCt <- pemvDCT %>%
 ```
 
 
-## Did the reference gene perform well as a reference for defense genes?
+### Did the reference gene perform well as a reference for defense genes?
 ```{r ref_gene_performance_defense, echo = F}
 
 deltaCt %>% 
@@ -211,7 +319,7 @@ deltaCt %>%
 
 ```
 
-## Did the reference gene perform well as a reference for cPEMV2?
+### Did the reference gene perform well as a reference for cPEMV2?
 ```{r ref_gene_performance_cPEMV2, echo = F}
 
 pemvDCT %>% 
@@ -270,9 +378,9 @@ pemv.mod <- lm(cPEMVCt ~ Rhizo * Cultivar,
 ```
 
 
-### Exploratory plots:
+## Exploratory plots:
 
-#### AO3
+### AO3
 ```{r AO3_test_plot, echo = F}
 
 ggplot(meanDeltaCt,
@@ -285,7 +393,7 @@ ggplot(meanDeltaCt,
 
 ```
 
-#### LOX2
+### LOX2
 ```{r LOX2_test_plot, echo = F}
 
 ggplot(meanDeltaCt,
@@ -298,7 +406,7 @@ ggplot(meanDeltaCt,
 
 ```
 
-#### PR1
+### PR1
 ```{r PR1_test_plot, echo = F}
 
 ggplot(meanDeltaCt,
@@ -312,7 +420,7 @@ ggplot(meanDeltaCt,
 ```
 
 
-#### cPEMV2
+### cPEMV2
 ```{r cPEMV2_test_plot, echo = F}
 
 ggplot(meanPEMVCt,
@@ -326,7 +434,6 @@ ggplot(meanPEMVCt,
 
 
 ### $\2^{-\Delta \Delta Ct}$ calcs
-
 ```{r AO3_calcs, echo = F}
 
 # get EM means
@@ -354,6 +461,7 @@ ao3ddCT <- ao3.means %>%
          FCucl = 2^-(ddCT + ddUCL))
 
 ```
+
 
 ```{r LOX2_calcs, echo = F}
 

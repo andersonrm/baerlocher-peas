@@ -9,15 +9,18 @@ February 06, 2024
 - [How the
   ![\2^{-\Delta \Delta Ct}](https://latex.codecogs.com/png.latex?%5C2%5E%7B-%5CDelta%20%5CDelta%20Ct%7D "\2^{-\Delta \Delta Ct}")
   method works:](#how-the-2-delta-delta-ct-method-works)
-- [Did the reference gene perform well as a reference for defense
-  genes?](#did-the-reference-gene-perform-well-as-a-reference-for-defense-genes)
-- [Did the reference gene perform well as a reference for
-  cPEMV2?](#did-the-reference-gene-perform-well-as-a-reference-for-cpemv2)
-  - [Exploratory plots:](#exploratory-plots)
-    - [AO3](#ao3)
-    - [LOX2](#lox2)
-    - [PR1](#pr1)
-    - [cPEMV2](#cpemv2)
+- [A working example](#a-working-example)
+  - [Proper reference gene:](#proper-reference-gene)
+  - [Now, a bad reference gene:](#now-a-bad-reference-gene)
+  - [Did the reference gene perform well as a reference for defense
+    genes?](#did-the-reference-gene-perform-well-as-a-reference-for-defense-genes)
+  - [Did the reference gene perform well as a reference for
+    cPEMV2?](#did-the-reference-gene-perform-well-as-a-reference-for-cpemv2)
+- [Exploratory plots:](#exploratory-plots)
+  - [AO3](#ao3)
+  - [LOX2](#lox2)
+  - [PR1](#pr1)
+  - [cPEMV2](#cpemv2)
   - [![\2^{-\Delta \Delta Ct}](https://latex.codecogs.com/png.latex?%5C2%5E%7B-%5CDelta%20%5CDelta%20Ct%7D "\2^{-\Delta \Delta Ct}")
     calcs](#2-delta-delta-ct-calcs)
 - [Figures](#figures)
@@ -29,7 +32,7 @@ February 06, 2024
 
 ## Overview
 
-This is an analysis of Chase’s RT-qPCR data. Results are displayed as
+This is an analysis of Chase’s qRT-PCR data. Results are displayed as
 the fold change difference in gene expression between the *no rhizobia*
 (control) condition and the *rhizobia* (treatment) condition.
 
@@ -68,17 +71,18 @@ Visually, this table represents the data needed:
 
 Where the above formula becomes:
 
-![\Delta\Delta Ct = (D - B) - (C - A)](https://latex.codecogs.com/png.latex?%5CDelta%5CDelta%20Ct%20%3D%20%28D%20-%20B%29%20-%20%28C%20-%20A%29 "\Delta\Delta Ct = (D - B) - (C - A)")
+![\Delta\Delta Ct = (A - B) - (C - D)](https://latex.codecogs.com/png.latex?%5CDelta%5CDelta%20Ct%20%3D%20%28A%20-%20B%29%20-%20%28C%20-%20D%29 "\Delta\Delta Ct = (A - B) - (C - D)")
 
 Alternatively,
 
-![\Delta\Delta Ct = (A - B) - (C - D)](https://latex.codecogs.com/png.latex?%5CDelta%5CDelta%20Ct%20%3D%20%28A%20-%20B%29%20-%20%28C%20-%20D%29 "\Delta\Delta Ct = (A - B) - (C - D)")
+![\Delta\Delta Ct = (D - B) - (C - A)](https://latex.codecogs.com/png.latex?%5CDelta%5CDelta%20Ct%20%3D%20%28D%20-%20B%29%20-%20%28C%20-%20A%29 "\Delta\Delta Ct = (D - B) - (C - A)")
 
 Or if you prefer no parentheses:
 
 ![\Delta\Delta Ct = A + D - B - C](https://latex.codecogs.com/png.latex?%5CDelta%5CDelta%20Ct%20%3D%20A%20%2B%20D%20-%20B%20-%20C "\Delta\Delta Ct = A + D - B - C")
 
-The above 3 equations are all equivalent.
+The above 3 equations are equivalent (this can be useful if your data
+are organized in different ways).
 
 To understand the intuition behind this method we first need to
 understand what a Ct, or cycle threshold value actually is.
@@ -129,39 +133,139 @@ fluctuate across samples and treatments.
   ![\Delta Ct\_{target.gene}](https://latex.codecogs.com/png.latex?%5CDelta%20Ct_%7Btarget.gene%7D "\Delta Ct_{target.gene}")
   will result in upregulation:
 
-![+\Delta Ct\_{target} = -\Delta\Delta Ct = 2^{-(-\Delta\Delta Ct)} = FC\>1](https://latex.codecogs.com/png.latex?%2B%5CDelta%20Ct_%7Btarget%7D%20%3D%20-%5CDelta%5CDelta%20Ct%20%3D%202%5E%7B-%28-%5CDelta%5CDelta%20Ct%29%7D%20%3D%20FC%3E1 "+\Delta Ct_{target} = -\Delta\Delta Ct = 2^{-(-\Delta\Delta Ct)} = FC>1")
+![+\Delta Ct\_{target} \to -\Delta\Delta Ct \to 2^{-(-\Delta\Delta Ct)} \to FC\>1](https://latex.codecogs.com/png.latex?%2B%5CDelta%20Ct_%7Btarget%7D%20%5Cto%20-%5CDelta%5CDelta%20Ct%20%5Cto%202%5E%7B-%28-%5CDelta%5CDelta%20Ct%29%7D%20%5Cto%20FC%3E1 "+\Delta Ct_{target} \to -\Delta\Delta Ct \to 2^{-(-\Delta\Delta Ct)} \to FC>1")
 
-alternatively, \* A negative
-![\Delta Ct\_{target.gene}](https://latex.codecogs.com/png.latex?%5CDelta%20Ct_%7Btarget.gene%7D "\Delta Ct_{target.gene}")
-will result in downregulation:
+alternatively,
 
-![-\Delta Ct\_{target} = +\Delta\Delta Ct = 2^{-(\Delta\Delta Ct)} = FC\<1](https://latex.codecogs.com/png.latex?-%5CDelta%20Ct_%7Btarget%7D%20%3D%20%2B%5CDelta%5CDelta%20Ct%20%3D%202%5E%7B-%28%5CDelta%5CDelta%20Ct%29%7D%20%3D%20FC%3C1 "-\Delta Ct_{target} = +\Delta\Delta Ct = 2^{-(\Delta\Delta Ct)} = FC<1")
+- A negative
+  ![\Delta Ct\_{target.gene}](https://latex.codecogs.com/png.latex?%5CDelta%20Ct_%7Btarget.gene%7D "\Delta Ct_{target.gene}")
+  will result in downregulation:
 
-## Did the reference gene perform well as a reference for defense genes?
+![-\Delta Ct\_{target} \to +\Delta\Delta Ct \to 2^{-(\Delta\Delta Ct)} \to FC\<1](https://latex.codecogs.com/png.latex?-%5CDelta%20Ct_%7Btarget%7D%20%5Cto%20%2B%5CDelta%5CDelta%20Ct%20%5Cto%202%5E%7B-%28%5CDelta%5CDelta%20Ct%29%7D%20%5Cto%20FC%3C1 "-\Delta Ct_{target} \to +\Delta\Delta Ct \to 2^{-(\Delta\Delta Ct)} \to FC<1")
+
+## A working example
+
+**Downregulation** is defined by a **higher** Ct value in the treatment
+condition compared to the control condition. Let’s try the calculations
+with ideal data and with data that have a poor reference gene.
+
+### Proper reference gene:
+
+|                | Control | Treatment |
+|:---------------|--------:|----------:|
+| Reference gene |  26.012 |    26.475 |
+| Target gene    |  24.149 |    26.688 |
+
+Our
+![\Delta Ct\_{ref}](https://latex.codecogs.com/png.latex?%5CDelta%20Ct_%7Bref%7D "\Delta Ct_{ref}")
+= A - B
+
+    ## [1] -0.463
+
+Not bad, pretty close to 0
+
+Our
+![\Delta Ct\_{target}](https://latex.codecogs.com/png.latex?%5CDelta%20Ct_%7Btarget%7D "\Delta Ct_{target}")
+= C - D
+
+    ## [1] -2.539
+
+Ok, this indicates that our target gene is **downregulated** in the
+treatment condition.
+
+![\Delta\Delta Ct](https://latex.codecogs.com/png.latex?%5CDelta%5CDelta%20Ct "\Delta\Delta Ct")
+\<- (A - B) - (C - D)
+
+    ## [1] 2.076
+
+Notice that the
+![\Delta\Delta Ct](https://latex.codecogs.com/png.latex?%5CDelta%5CDelta%20Ct "\Delta\Delta Ct")
+value is **positive**.
+
+Now for the fold change transformation:
+![2^{-(\Delta\Delta Ct)}](https://latex.codecogs.com/png.latex?2%5E%7B-%28%5CDelta%5CDelta%20Ct%29%7D "2^{-(\Delta\Delta Ct)}")
+or
+![2^{-(2.076)}](https://latex.codecogs.com/png.latex?2%5E%7B-%282.076%29%7D "2^{-(2.076)}")
+
+    ## [1] 0.2371711
+
+Our answer falls between 0 and 1 indicating that the target gene is
+**downregulated**. This result makes sense given the negative
+![\Delta Ct\_{target}](https://latex.codecogs.com/png.latex?%5CDelta%20Ct_%7Btarget%7D "\Delta Ct_{target}")
+value.
+
+### Now, a bad reference gene:
+
+This example will use identical values for the target gene. Only the
+reference gene has changed.
+
+|                | Control | Treatment |
+|:---------------|--------:|----------:|
+| Reference gene |  21.903 |    26.475 |
+| Target gene    |  24.149 |    26.688 |
+
+Our
+![\Delta Ct\_{ref}](https://latex.codecogs.com/png.latex?%5CDelta%20Ct_%7Bref%7D "\Delta Ct_{ref}")
+= a - b
+
+    ## [1] -4.572
+
+Terrible, our reference gene is not stable.
+
+Our
+![\Delta Ct\_{target}](https://latex.codecogs.com/png.latex?%5CDelta%20Ct_%7Btarget%7D "\Delta Ct_{target}")
+= c - d
+
+    ## [1] -2.539
+
+Again, this would indicate that our target gene is **downregulated** in
+the treatment condition.
+
+![\Delta\Delta Ct](https://latex.codecogs.com/png.latex?%5CDelta%5CDelta%20Ct "\Delta\Delta Ct")
+\<- (a - b) - (c - d)
+
+    ## [1] -2.033
+
+Notice that our
+![\Delta\Delta Ct](https://latex.codecogs.com/png.latex?%5CDelta%5CDelta%20Ct "\Delta\Delta Ct")
+value is now **negative**!
+
+Now for the fold change transformation:
+![2^{-(\Delta\Delta Ct)}](https://latex.codecogs.com/png.latex?2%5E%7B-%28%5CDelta%5CDelta%20Ct%29%7D "2^{-(\Delta\Delta Ct)}")
+or
+![2^{-(-2.033)}](https://latex.codecogs.com/png.latex?2%5E%7B-%28-2.033%29%7D "2^{-(-2.033)}")
+
+    ## [1] 4.09255
+
+Now our answer is much greater than 1 indicating that the target gene is
+highly **upregulated**! Even slight difference in expression of the
+reference gene can generate spurious results!
+
+### Did the reference gene perform well as a reference for defense genes?
 
 ![](Chase-PeaCR_files/figure-gfm/ref_gene_performance_defense-1.png)<!-- -->
 
-## Did the reference gene perform well as a reference for cPEMV2?
+### Did the reference gene perform well as a reference for cPEMV2?
 
 ![](Chase-PeaCR_files/figure-gfm/ref_gene_performance_cPEMV2-1.png)<!-- -->
 
 ![](Chase-PeaCR_files/figure-gfm/defense_genes_models-1.png)<!-- -->
 
-### Exploratory plots:
+## Exploratory plots:
 
-#### AO3
+### AO3
 
 ![](Chase-PeaCR_files/figure-gfm/AO3_test_plot-1.png)<!-- -->
 
-#### LOX2
+### LOX2
 
 ![](Chase-PeaCR_files/figure-gfm/LOX2_test_plot-1.png)<!-- -->
 
-#### PR1
+### PR1
 
 ![](Chase-PeaCR_files/figure-gfm/PR1_test_plot-1.png)<!-- -->
 
-#### cPEMV2
+### cPEMV2
 
 ![](Chase-PeaCR_files/figure-gfm/cPEMV2_test_plot-1.png)<!-- -->
 
