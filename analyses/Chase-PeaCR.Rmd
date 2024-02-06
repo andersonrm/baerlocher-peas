@@ -101,6 +101,7 @@ pemv1 <- pemv1 %>%
 ```
 
 
+
 ## Clark-Anderson $\2^{-\Delta \Delta Ct}$ method
 
 ```{r clark_anderson_method, echo = F}
@@ -124,7 +125,17 @@ deltaCt <- defense1 %>%
 
 ```
 
+# Did the reference rene perform well as a reference?
+```{r ref_gene_performance, echo = F}
 
+deltaCt %>% 
+  ggplot(aes(x = Btub, fill = Rhizo)) +
+  geom_density(alpha = 0.7) +
+  facet_wrap(~Cultivar) +
+  theme_classic()
+
+
+```
 
 ```{r modeling, echo = F}
 
@@ -137,7 +148,7 @@ ao3.mod <- lm(AO3Ct ~ Rhizo * Aphid * Cultivar,
                 data = deltaCt)
 summary(ao3.mod)
 
-emmeans(ao3.mod, 
+mod.means <- emmeans(ao3.mod, 
         ~ Rhizo * Aphid * Cultivar,
                   adjust = "none", response = T)
 
@@ -180,11 +191,23 @@ ggplot(meanDeltaCt, aes(x = Rhizo, y = AO3CtMean,
 
 
 
+mod.means <- as_tibble(mod.means)
 
-meanDeltaCt %>%
-   tibble::rownames_to_column() %>%  
-   pivot_longer(-rowname,) %>% 
-   pivot_wider(names_from=rowname, values_from=value)
+mod.means <- mod.means %>% 
+  pivot_wider(id_cols = c(Aphid, Cultivar),
+              names_from = Rhizo,
+              values_from = c(emmean, SE))
+
+
+ao3ddCT <- mod.means %>% 
+  mutate(ddCT = emmean_Rhizobia - emmean_NoRhizobia,
+         ddSE = (SE_Rhizobia + SE_NoRhizobia)/2,
+         ddLCL = ddCT - (1.96 * ddSE),
+         ddUCL = ddCT + (1.96 * ddSE),
+         FC = 2^-ddCT,
+         FClcl = 2^-(ddCT - ddLCL),
+         FCucl = 2^-(ddCT + ddUCL))
+
 
 
 
@@ -219,18 +242,16 @@ def.long %>%
 
 # Okay, residuals look pretty good.
 
-# Check the BLUPs:
-plot_model(ao3.mod,
-           type = "re")
+
 
 ```
 
 
 ```{r model_results, echo = F}
 
-def.table <- summary.aov(defense.genes)
-
-def.table
+# def.table <- summary.aov(defense.genes)
+# 
+# def.table
 
 ```
 
@@ -238,20 +259,20 @@ def.table
 
 # get EM means
 
-def.em <- emmeans(defense.genes,
-                  ~ Rhizo * Aphid * Cultivar | genes,
-                  mult.name = "genes",
-                  adjust = "none", response = T)
+# def.em <- emmeans(defense.genes,
+#                   ~ Rhizo * Aphid * Cultivar | genes,
+#                   mult.name = "genes",
+#                   adjust = "none", response = T)
 
 # add CLDs (compact letter displays)
 
-def.cld <- cld(def.em,
-               sort = F, adjust = "none",
-               response = T, Letters = "abcdef")
-
-def.cld$.group <- gsub(" ", "", def.cld$.group)
-
-def.cld <- as_tibble(def.cld)
+# def.cld <- cld(def.em,
+#                sort = F, adjust = "none",
+#                response = T, Letters = "abcdef")
+# 
+# def.cld$.group <- gsub(" ", "", def.cld$.group)
+# 
+# def.cld <- as_tibble(def.cld)
 
 ############
 # 
@@ -272,24 +293,24 @@ def.cld <- as_tibble(def.cld)
 #   ))
 
 
-def.cld.wide <- def.cld %>% 
-  dplyr::select(Rhizo:SE) %>% 
-  pivot_wider(names_from = genes,
-              values_from = c(emmean, SE))
-
-def.cld.wide <- def.cld.wide %>% 
-  mutate(AO3Ct = 2^(-(emmean_AO3 - emmean_Btub)),
-         AO3CtSElower = 2^(-(emmean_AO3 - SE_AO3)),
-         AO3CtSEupper = 2^(-(emmean_AO3 + SE_AO3)),
-         LOX2Ct = 2^(-(emmean_LOX2 - emmean_Btub)),
-         LOX2CtSElower = 2^(-(emmean_LOX2 - SE_LOX2)),
-         LOX2CtSEupper = 2^(-(emmean_LOX2 + SE_LOX2)),
-         PR1Ct = 2^(-(emmean_PR1 - emmean_Btub)),
-         PR1CtSElower = 2^(-(emmean_PR1 - SE_AO3)),
-         PR1CtSEupper = 2^(-(emmean_PR1 = SE_AO3)))
-
-def.Ct <- def.cld.wide %>% 
-  dplyr::select(!emmean_Btub:treatment)
+# def.cld.wide <- def.cld %>% 
+#   dplyr::select(Rhizo:SE) %>% 
+#   pivot_wider(names_from = genes,
+#               values_from = c(emmean, SE))
+# 
+# def.cld.wide <- def.cld.wide %>% 
+#   mutate(AO3Ct = 2^(-(emmean_AO3 - emmean_Btub)),
+#          AO3CtSElower = 2^(-(emmean_AO3 - SE_AO3)),
+#          AO3CtSEupper = 2^(-(emmean_AO3 + SE_AO3)),
+#          LOX2Ct = 2^(-(emmean_LOX2 - emmean_Btub)),
+#          LOX2CtSElower = 2^(-(emmean_LOX2 - SE_LOX2)),
+#          LOX2CtSEupper = 2^(-(emmean_LOX2 + SE_LOX2)),
+#          PR1Ct = 2^(-(emmean_PR1 - emmean_Btub)),
+#          PR1CtSElower = 2^(-(emmean_PR1 - SE_AO3)),
+#          PR1CtSEupper = 2^(-(emmean_PR1 = SE_AO3)))
+# 
+# def.Ct <- def.cld.wide %>% 
+#   dplyr::select(!emmean_Btub:treatment)
 
 ```
 
