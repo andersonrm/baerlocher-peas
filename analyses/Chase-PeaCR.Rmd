@@ -69,6 +69,27 @@ defense1 <- read.csv("data/defense.genes.csv")
 
 pemv1 <- read.csv("data/pemv.genes.csv")
 
+chase <- read.csv("data/chase.fig.csv")
+
+```
+
+
+```{r quick_figure, echo = F}
+
+chase %>% 
+  mutate(rhizo = factor(rhizo),
+         strain = factor(strain)) %>% 
+  ggplot(aes(x = strain, y = PEMV, color = rhizo)) +
+  geom_point() +
+  geom_errorbar(aes(ymin = lower, ymax = upper),
+                width = 0.1) +
+  theme_cowplot() +
+  scale_y_continuous(transform = "log10") +
+  labs(x = "Cultivar", y = "Relative PEMV2 titer",
+       color = "Treatment") +
+  scale_color_discrete(labels = c("No rhizobia", "Rhizobia"))
+
+
 ```
 
 

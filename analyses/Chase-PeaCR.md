@@ -1,7 +1,7 @@
 Winter Pea qRT-PCR
 ================
 Riley M. Anderson & Chase Baerlocher
-February 06, 2024
+October 22, 2024
 
   
 
@@ -23,6 +23,8 @@ February 06, 2024
   - [PR1](#pr1-1)
   - [cPEMV2](#cpemv2-1)
 - [Session Information](#session-information)
+
+![](Chase-PeaCR_files/figure-gfm/quick_figure-1.png)<!-- -->
 
 ## Overview
 
